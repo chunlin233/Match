@@ -35,6 +35,7 @@ affiliation_list1 = []
 affiliation_list2 = []
 email = []
 author = []
+rp = []
 
 # 匹配度阈值，若低于该值，则匹配输出为None
 score_cutoff = 60
@@ -170,11 +171,10 @@ def match_country(last_country, excel_country, excel_state, color_list, email_ar
     # print(color)
     # print(len(color))
     return color
+
+
 #######################################换单元格颜色##############################################
 def changecolor(row_list, color):
-
-
-
     # mf.save(matched_file_path)
     global matched_file_path
     y=[]
@@ -191,43 +191,40 @@ def changecolor(row_list, color):
 
 
 
-#########################################################################################
-
-
-
-def match_full_short_name(names, rp_names):
-    global full_list
+########################################简称匹配全称###############################################
+def match_full_short_name(short_names, full_names, rp_names):
     import process
     import fuzz
 
-    def fuzz_match(names, rp_names):
+    def fuzz_match(short_names, full_names, rp_names):
         matched_full_names = []
         for i in range(len(rp_names)):
             # name = process.extractOne(rp_names[i], names, scorer=fuzz.partial_token_set_ratio)
             # print(names)
-            name = process.extractOne(rp_names[i], names, scorer=fuzz.partial_ratio)
-            short, full = name[0].split('; ')
-            matched_full_names.append(full)
+            max_ratio = 0
+            max_ratio_index = -1
+            for j in range(len(short_names)):
+                # name = process.extractOne(rp_names[i], names, scorer=fuzz.partial_token_set_ratio)
+                ratio = fuzz.partial_ratio(rp_names[i], short_names[j])
+                if max_ratio < ratio:
+                    max_ratio = ratio
+                    max_ratio_index = j
+            matched_full_names.append(full_names[max_ratio_index])
+
         return matched_full_names
 
-    matched_full_names = fuzz_match(names, rp_names)
+    if type(rp_names) != list:
+        rp_names = [rp_names]
+    if type(short_names) != list:
+        short_names = [short_names]
+    if type(full_names) != list:
+        full_names = [full_names]
+    matched_full_names = fuzz_match(short_names, full_names, rp_names)
     # print(rp_names) #缩写的匹配上的通讯作者名
     return matched_full_names
 
 
-#########################################################################################
-
-
-
-
-
-
-
-
-
-
-
-############################
+#########################################邮箱匹配名字################################################
 def match_name_email(names, emails):
     import process
     import fuzz
@@ -253,11 +250,15 @@ def match_name_email(names, emails):
 
         return matched_short_names, matched_full_names
 
+    if type(names) != list:
+        names = [names]
+    if type(emails) != list:
+        emails = [emails]
     lists = fuzz_match(names, emails)
     return lists
 
 
-#####################################################################################################################
+#########################################邮箱匹配rp#####################################################
 """ add """
 ############################
 # 邮箱匹配RP，输出匹配的RP作者简写
@@ -279,13 +280,17 @@ def match_rp_email(rp_names, emails):
 
         return matched_rp_names
 
+    if type(rp_names) != list:
+        rp_names = [rp_names]
+    if type(emails) != list:
+        emails = [emails]
     matched_rp_names = fuzz_match(rp_names, emails)
     return matched_rp_names
 """ add """
 
 
 ##########################################带入邮箱、论文名、出版时间、出版商信息、城市信息、机构信息1、机构信息2#####################
-def message(email_array, list_paper, list_date,list_publisher, list_city, list_reference, reprint_author, full_names):
+def message(email_array, list_paper, list_date, list_publisher, list_city, list_reference, reprint_author, full_names):
     count1 = 0
     count2 = 0
     count3 = 0
@@ -415,17 +420,25 @@ def message(email_array, list_paper, list_date,list_publisher, list_city, list_r
     ##########################################################
     full =[]
     all_author = []
+    all_rp = []
 
-    for r in range(len(email_array)):
+    # for r in range(len(email_array)):
+    #     if pd.isna(email_array[r]):
+    #         count9 = count9 + 1
+    #         continue
+    #     each_full_author = full_names[r]
+    #     full.append(each_full_author)
+    #     emails_one = email_array_split(email_array[r])
+    #     for b in range(len(emails_one)):
+    #         all_author.append(full[r-count9])
 
-        if pd.isna(email_array[r]):
-            count9 = count9 + 1
+    for i in range(len(email_array)):
+        if pd.isna(email_array[i]):
             continue
-        each_full_author = full_names[r]
-        full.append(each_full_author)
-        emails_one = email_array_split(email_array[r])
-        for b in range(len(emails_one)):
-            all_author.append(full[r-count9])
+        emails_one = email_array_split(email_array[i])
+        for _ in range(len(emails_one)):
+            all_author.append(full_names[i])
+            all_rp.append(reprint_author[i])
 
     # print(all_author)
     # print(len(all_author))
@@ -433,9 +446,11 @@ def message(email_array, list_paper, list_date,list_publisher, list_city, list_r
     for u in range(len(all_author)):
         if full_list[u] == 'NA':
             author.append(all_author[u])
+            rp.append(all_rp[u])
         else:
             author.append('')
-    print(author)
+            rp.append('')
+    # print(author)
     print(len(author))
         # emails_one = email_array_split(email_array[r])
         # if full_list[r] != 'NA':
@@ -463,122 +478,66 @@ def message(email_array, list_paper, list_date,list_publisher, list_city, list_r
         # print(email_array[x])
         list_all_emails.append(email_array[x])
 
-
-
-
     return list_all_emails
+
 
 
 ##########################################################################################################
 def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_array):
     global short_list
-    global paper_list
+    global full_list
     length = len(email_array)
-
-     ###############################################
-    #
-    #
-    # init = np.array([['NA', 'NA']])
-    # init = np.repeat(init, length, axis=0)
-    # df = pd.DataFrame(data=init, columns=['EAS', 'EAF'])
-    # new_emails=[]
-    # list_all=[]
-    # for i in range(length):
-    #     if pd.isna(email_array[i]):
-    #         continue
-    #     emails = email_array_split(email_array[i])
-    #     list_all.append(emails)
-    #     # print(type(emails))
-    #     # print(list_emails)
-    #     # print(emails)
-    #     for e in emails:
-    #         new_emails.append(e)
-    #     # print(type(email_array[i]))
-    #     short_names = name_array_split(short_name_array[i])
-    #     full_names = name_array_split(full_name_array[i])
-    #     names = ['; '.join([short, full]) for short, full in zip(short_names, full_names)]
-    #     if len(emails) > 1 or pd.isna(rp_name_array[i]) or len(re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])) == 0:
-    #         # short_str, full_str = match_name_email(names, emails)     #changed
-    #
-    #         """ changed """
-    #         result = match_name_email(names, emails)
-    #         if result is None:
-    #             print(matched_rp_names, 'None')
-    #             # 若邮箱匹配names无成功返回值，则跳过
-    #             continue
-    #         else:
-    #             # 邮箱匹配names有成功返回值
-    #             short_str, full_str = result
-    #
-    #         df.loc[i, ('EAS', 'EAF')] = [short_str, full_str]
-    #
-    #
-    #     elif len(emails) == 1:
-    #         # first_name = []
-    #         rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
-    #         rp_names = [rp_names[0].strip()]
-    #
-    #         rp_str = rp_names[0] + '(' + emails[0] + ')'
-    #         first_name = rp_names[0].split(', ')[0]
-    #         # print(first_name)
-    #         short_list.append(first_name)
-    #
-    #         full_str = match_full_short_name(names, rp_names, emails)
-    #         # print(full_str, '11111111')
-    #         # print(full_str)
-    #         df.loc[i, ('EAS', 'EAF')] = [rp_str, full_str]
-
-
-    # init = np.array([['NA', 'NA']])
-    # init = np.repeat(init, length, axis=0)
-    # df = pd.DataFrame(data=init, columns=['EAS', 'EAF'])
     new_emails = []
-    list_all = []
+
     for i in range(length):
         if pd.isna(email_array[i]):
             continue
         emails = email_array_split(email_array[i])
-        list_all.append(emails)
-        for e in emails:
-            new_emails.append(e)
+        [new_emails.append(e) for e in emails]
 
+        emails = email_array_split(email_array[i])
         short_names = name_array_split(short_name_array[i])
         full_names = name_array_split(full_name_array[i])
         names = ['; '.join([short, full]) for short, full in zip(short_names, full_names)]
-        if len(emails) > 1 or pd.isna(rp_name_array[i]) or len(re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])) == 0:
-            """ changed """
+        unsplited_rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
+        rp_names = []
+        for rp_name in unsplited_rp_names:
+            rp_name = rp_name.split(';')
+            [rp_names.append(r.strip()) for r in rp_name]
+
+        if pd.isna(rp_name_array[i]) or len(rp_names) == 0:
+            # 若rp无数据，则用邮箱匹配names
             matched_short_names, matched_full_names = match_name_email(names, emails)
             [short_list.append(s.split(',')[0]) for s in matched_short_names]
             [full_list.append(s) for s in matched_full_names]
-            """ changed """
+            assert len(matched_short_names) == len(emails)
+            assert len(matched_full_names) == len(emails)
 
 
-        elif len(emails) == 1:
-            # first_name = []
-            rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
+        elif len(emails) >= 1:
+            # 若rp有数据(>=1)，则先用邮箱匹配rp
+            matched_rp_names = match_rp_email(rp_names, emails)
+            assert len(matched_rp_names) == len(emails)
 
-            """ changed """
-            if len(rp_names) == 1:
-                # 若邮箱只有一个，且rp只有一个，则直接选择它为匹配的名字
-                matched_rp_names = [rp_names[0].strip()]
-            elif len(rp_names) > 1:
-                # 若邮箱只有一个，而rp有多个，则需要从rp中匹配出一个名字
-                rp_names = [rp.strip() for rp in rp_names]
-                matched_rp_names = match_rp_email(rp_names, emails)
-            elif len(rp_names) == 0:
-                matched_rp_names = ['NA']
+            matched_full_names = ['NA'] * len(emails)
 
-            if matched_rp_names[0] == 'NA':
-                # 若邮箱匹配RP失败，则尝试邮箱匹配names
-                matched_short_names, matched_full_names = match_name_email(names, emails)
-            else:
-                # 邮箱匹配RP成功
-                matched_short_names = matched_rp_names
-                matched_full_names = match_full_short_name(names, matched_rp_names)
+            for i in range(len(matched_rp_names)):
+                if matched_rp_names[i] != 'NA':
+                    # 邮箱匹配rp成功，简称匹配全称
+                    matched_full_name = match_full_short_name(short_names, full_names, matched_rp_names[i])
+                    matched_full_names[i] = matched_full_name[0]
 
-            [short_list.append(s.split(',')[0]) for s in matched_short_names]
+                elif matched_rp_names[i] == 'NA':
+                    # 若邮箱匹配rp失败，则尝试邮箱匹配names
+                    matched_short_name, matched_full_name = match_name_email(names, emails[i])
+                    matched_rp_names[i] = matched_short_name[0]
+                    matched_full_names[i] = matched_full_name[0]
+
+            [short_list.append(s.split(',')[0]) for s in matched_rp_names]
             [full_list.append(s) for s in matched_full_names]
-            """ changed """
+
+            assert len(matched_rp_names) == len(emails)
+            assert len(matched_full_names) == len(emails)
 
     return new_emails
 
@@ -607,10 +566,7 @@ def write_to_excel(matched_file_path):
     df.insert(df.shape[1], 'Affiliation1', affiliation_list1)
     df.insert(df.shape[1], 'Affiliation2', affiliation_list2)
     df.insert(df.shape[1], 'Author', author)
-
-
-
-
+    df.insert(df.shape[1], 'RP', rp)
 
     # df['EAS'] = df_add['EAS']
     # df['EAF'] = df_add['EAF']
