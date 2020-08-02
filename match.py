@@ -506,10 +506,12 @@ def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_arra
             [rp_names.append(r.strip()) for r in rp_name]
 
         if pd.isna(rp_name_array[i]) or len(rp_names) == 0:
-            # 若rp无数据，则用邮箱匹配names
-            matched_short_names, matched_full_names = match_name_email(names, emails)
-            [short_list.append(s.split(',')[0]) for s in matched_short_names]
-            [full_list.append(s) for s in matched_full_names]
+            # 若rp无数据，则直接输出匹配结果NA
+            [short_list.append('NA') for _ in range(len(emails))]
+            [full_list.append('NA') for _ in range(len(emails))]
+            # matched_short_names, matched_full_names = match_name_email(names, emails)
+            # [short_list.append(s.split(',')[0]) for s in matched_short_names]
+            # [full_list.append(s) for s in matched_full_names]
             assert len(matched_short_names) == len(emails)
             assert len(matched_full_names) == len(emails)
 
@@ -528,10 +530,12 @@ def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_arra
                     matched_full_names[i] = matched_full_name[0]
 
                 elif matched_rp_names[i] == 'NA':
-                    # 若邮箱匹配rp失败，则尝试邮箱匹配names
-                    matched_short_name, matched_full_name = match_name_email(names, emails[i])
-                    matched_rp_names[i] = matched_short_name[0]
-                    matched_full_names[i] = matched_full_name[0]
+                    # 若邮箱匹配rp失败，则直接输出匹配结果NA
+                    matched_rp_names[i] = 'NA'
+                    matched_full_names[i] = 'NA'
+                    # matched_short_name, matched_full_name = match_name_email(names, emails[i])
+                    # matched_rp_names[i] = matched_short_name[0]
+                    # matched_full_names[i] = matched_full_name[0]
 
             [short_list.append(s.split(',')[0]) for s in matched_rp_names]
             [full_list.append(s) for s in matched_full_names]
