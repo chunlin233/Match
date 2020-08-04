@@ -499,24 +499,22 @@ def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_arra
         short_names = name_array_split(short_name_array[i])
         full_names = name_array_split(full_name_array[i])
         names = ['; '.join([short, full]) for short, full in zip(short_names, full_names)]
-        unsplited_rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
-        rp_names = []
-        for rp_name in unsplited_rp_names:
-            rp_name = rp_name.split(';')
-            [rp_names.append(r.strip()) for r in rp_name]
 
-        if pd.isna(rp_name_array[i]) or len(rp_names) == 0:
+        if pd.isna(rp_name_array[i]):
             # 若rp无数据，则直接输出匹配结果NA
             [short_list.append('NA') for _ in range(len(emails))]
             [full_list.append('NA') for _ in range(len(emails))]
             # matched_short_names, matched_full_names = match_name_email(names, emails)
             # [short_list.append(s.split(',')[0]) for s in matched_short_names]
             # [full_list.append(s) for s in matched_full_names]
-            assert len(matched_short_names) == len(emails)
-            assert len(matched_full_names) == len(emails)
-
 
         elif len(emails) >= 1:
+            unsplited_rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
+            rp_names = []
+            for name in unsplited_rp_names:
+                name = name.split(';')
+                [rp_names.append(n.strip()) for n in name]
+                
             # 若rp有数据(>=1)，则先用邮箱匹配rp
             matched_rp_names = match_rp_email(rp_names, emails)
             assert len(matched_rp_names) == len(emails)
@@ -539,9 +537,6 @@ def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_arra
 
             [short_list.append(s.split(',')[0]) for s in matched_rp_names]
             [full_list.append(s) for s in matched_full_names]
-
-            assert len(matched_rp_names) == len(emails)
-            assert len(matched_full_names) == len(emails)
 
     return new_emails
 

@@ -91,3 +91,8 @@ if __name__ == "__main__":
         [splited_rp_names.append(r.strip()) for r in rp_name]
 
     print(splited_rp_names)
+
+    name = 'chunlin'
+    name2 = 'chunlin; daiqiang'
+    print(name.split(';'))
+    print(name2.split(';'))
