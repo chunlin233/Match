@@ -21,10 +21,11 @@ global downloadfile
 global matched_file_path
 global row
 global list_emails_all
-global short_list, full_list, re_email, paper_list, pd_list, pb_list, pi_list, re_list, affiliation_list1, affiliation_list2, email, author
+global short_list, full_list, re_email, paper_list, pd_list, pb_list, pi_list, re_list, affiliation_list1, affiliation_list2, email, author, new_affiliation,list_country, list_affiliation
 global paper_index, RGB_Code
 short_list = []
 full_list = []
+matched_state_list = [] # 0 for not match any name; 1 for match rp; 2 for match names;
 re_email = []
 paper_list = []
 pd_list = []
@@ -36,6 +37,9 @@ affiliation_list2 = []
 email = []
 author = []
 rp = []
+new_affiliation = []
+list_country = []
+list_affiliation = []
 
 # 匹配度阈值，若低于该值，则匹配输出为None
 score_cutoff = 60
@@ -52,6 +56,10 @@ def email_array_split(one_paper_email):
     email_array = one_paper_email.split('; ')
     return email_array
 
+###########################分开RP中的多个信息########################################################
+def rp_array_split(rp):
+    rp_array = rp.split('; ')
+    return rp_array
 ############################寻找后缀为163的邮箱########################################################
 def email_find_163(email_array, list_all_emails):
     # global row
@@ -66,31 +74,35 @@ def email_find_163(email_array, list_all_emails):
     return row_list
 
 
-##############################分割国家####################################
-def differ_country(rp_names_array,email_array):
-    country = []
-    last_country_str = []
-    last_country = []
-
-    # for i in range(len(rp_names_array)):
-    #     if pd.isna(rp_names_array[i]):
-    #         continue
-    for i in range(len(email_array)):
-        if pd.isna(email_array[i]): #设定在email为空的情况下不会输出
-            last_country.append('NA')
-            continue
-        country.append(rp_names_array[i])
-        last = rp_names_array[i].split(', ')
-        last_str = last[len(last)-1].split('.')[0]
-        # print(type(last_str))
-        # print(last_str)
-        last1 = last_str.split(' ')
-        last_country.append(last1[len(last1)-1])
-
-    # print(last_country)
-    # print(len(last_country))
-    return last_country
-
+# ##############################分割国家####################################
+# def differ_country(rp_names_array,email_array):
+#     country = []
+#     last_country_str = []
+#     last_country = []
+#
+#     # for i in range(len(rp_names_array)):
+#     #     if pd.isna(rp_names_array[i]):
+#     #         continue
+#     for i in range(len(email_array)):
+#         if pd.isna(email_array[i]): #设定在email为空的情况下不会输出
+#             last_country.append('NA')
+#             continue
+#         if rp_names_array[i] == float:
+#             rp_names_array[i] = ''
+#         print(type(rp_names_array[i]))
+#         print(i)
+#         country.append(rp_names_array[i])
+#         last = rp_names_array[i].split(', ')
+#         last_str = last[len(last)-1].split('.')[0]
+#         # print(type(last_str))
+#         # print(last_str)
+#         last1 = last_str.split(' ')
+#         last_country.append(last1[len(last1)-1])
+#
+#     # print(last_country)
+#     # print(len(last_country))
+#     return last_country
+#
 
 
 #############################读取国家表格内容并对不同州赋予不同的颜色#######################################
@@ -138,33 +150,52 @@ def open_country():
 
 
 ####################################匹配国家和州，并获取匹配上的行数#######################################################
-def match_country(last_country, excel_country, excel_state, color_list, email_array):
+def match_country(list_country, excel_country, excel_state, color_list, email_array):
     state = []
     color = []
     count1 = 0
     row_index = []
 
-    for k in range(len(email_array)):
+    for i in range(len(list_country)):
         flag = 0
-        if pd.isna(email_array[k]):
-            count1 = count1 + 1
-            continue
         for j in range(len(excel_country)):
-
-            if last_country[k] == excel_country[j]:
+            if list_country[i] == excel_country[j]:
                 flag = 1
-                # index = k+count1
-                # row_index.append(index)
                 cur_color = color_list[j]
-                emails_one = email_array_split(email_array[k])
-                for z in range(len(emails_one)):
-                    color.append(cur_color)
-                continue
+                color.append(cur_color)
+                break
         if flag == 0:
-            emails_one = email_array_split(email_array[k])
-            for a in range(len(emails_one)):
-                color.append('FFFFFF')
+            color.append('FFFFFF')
+
+
+
+
+    # for k in range(len(email_array)):
+    #     flag = 0
+    #     if pd.isna(email_array[k]):
+    #         count1 = count1 + 1
+    #         continue
+    #     for j in range(len(excel_country)):
+    #
+    #         if last_country[k] == excel_country[j]:
+    #             flag = 1
+    #             # index = k+count1
+    #             # row_index.append(index)
+    #             cur_color = color_list[j]
+    #             emails_one = email_array_split(email_array[k])
+    #             for z in range(len(emails_one)):
+    #                 color.append(cur_color)
+    #             continue
+    #     if flag == 0:
+    #         emails_one = email_array_split(email_array[k])
+    #         for a in range(len(emails_one)):
+    #             color.append('FFFFFF')
+    # print(color)
+    # print(len(color))
+    # print(last_country, '1')
+
     # print(len(email_array)) #71
+
     #
     # print(len(last_country))    #71
     # print(len(row_index))
@@ -288,6 +319,122 @@ def match_rp_email(rp_names, emails):
     return matched_rp_names
 """ add """
 
+###################提取每一个RP的每一个作者的对应的姓名缩写、国家和机构名######################################
+def af(reprint_author, email_array):
+    reprint= []
+    all_reprint_short = []
+    all_reprint_country = []
+    all_reprint_affilliation = []
+    for i in range(len(email_array)):
+        if pd.isna(email_array[i]):
+            continue
+        reprint.append(reprint_author[i])
+
+    for j in range(len(reprint)):
+        if type(reprint[j]) == float:
+            reprint[j] = ''
+
+        each_reprint = reprint[j].split('; ')
+        for a in range(len(each_reprint)):
+            each_reprint_short = each_reprint[a].split(' (reprint author)')[0]
+            each_all_element = each_reprint[a].split(', ')
+            all_reprint_short.append(each_reprint_short)
+            # print(len(each_all_element))
+            if(len(each_all_element)<3):
+                all_reprint_country.append('')
+                all_reprint_affilliation.append('')
+                # continue
+            elif(len(each_all_element)>=3):
+                each_affilliation = each_all_element[2]
+                all_reprint_affilliation.append(each_affilliation)
+                last1 = each_all_element[len(each_all_element)-1].split('.')[0]
+                each_last = last1.split(' ')
+                each_country = each_last[len(each_last)-1]
+                all_reprint_country.append(each_country)
+
+    # print(len(all_reprint_short))
+    # print(all_reprint_short,'meigai')
+    # print(len(all_reprint_country), 'meigai')
+    # print(all_reprint_country)
+    # print(len(all_reprint_affilliation))
+    # print(all_reprint_affilliation)
+    return all_reprint_short, all_reprint_country, all_reprint_affilliation
+
+##################################匹配姓名缩写来得到列中的机构和国家名###################################################
+def match_list(all_reprint_short, all_reprint_country, all_reprint_affilliation, short_name, email_array):
+
+
+    for i in range(len(short_name)):
+        flag = 0
+        if short_name[i] == '':
+            # print(i)
+            flag = 2
+            list_country.append('')
+            list_affiliation.append('')
+            # print(i)
+        else:
+            for j in range(len(all_reprint_short)):
+                if short_name[i] == all_reprint_short[j]:
+                    # print(i,j)
+                    flag = 1
+                    # print(i)
+                    all_reprint_short[j] = 'used'
+                    list_country.append(all_reprint_country[j])
+                    list_affiliation.append(all_reprint_affilliation[j])
+                    break
+        if flag == 0:
+            # print(i)
+            list_country.append('')
+            list_affiliation.append('')
+
+
+    # for j in range(len(all_reprint_short)):
+        #     # if short_name[i] == '':
+        #     #     list_country.append('')
+        #     #     list_affiliation.append('')
+        #     #     print(i)
+        #     if short_name[i] == all_reprint_short[j]:
+        #         print(i)
+        #         all_reprint_short[j] = 'used'
+        #         list_country.append(all_reprint_country[j])
+        #         list_affiliation.append(all_reprint_affilliation[j])
+        #         break
+
+
+    # for x in range(len(all_reprint_short)):
+    #     for y in range(len(short_name)):
+    #         if short_name[y] == '':
+    #             list_country.append('')
+    #             list_affiliation.append('')
+    #         elif short_name[y] == all_reprint_short[x]:
+    #             all_reprint_short[x] = 'used'
+    #             list_country.append(all_reprint_country[x])
+    #             list_affiliation.append(all_reprint_affilliation[x])
+    #             break
+    #     else:
+    #         list_country.append('')
+    #         list_affiliation.append('')
+    #
+    #
+
+
+
+
+
+
+
+
+    # print(short_name, 'short_name')
+    print(len(short_name), 'short_name')
+    # print(all_reprint_short, 'all_reprint_short')
+    # print(len(all_reprint_short), 'all_reprint_short')
+    # # print(all_reprint_short)
+    # print(list_country)
+    print(len(list_country))
+    # print(list_affiliation)
+    print(len(list_affiliation))
+
+
 
 ##########################################带入邮箱、论文名、出版时间、出版商信息、城市信息、机构信息1、机构信息2#####################
 def message(email_array, list_paper, list_date, list_publisher, list_city, list_reference, reprint_author, full_names):
@@ -360,22 +507,24 @@ def message(email_array, list_paper, list_date, list_publisher, list_city, list_
         for c in range(len(emails_one)):
             pb_list.append(publisher[p - count3])
 
-    ##################################################
-    country = []  # 将城市信息带入
-    last_country = []
-    for v in range(len(email_array)):
-        if pd.isna(email_array[v]):
-            count4 = count4 + 1
-            continue
-        country.append(reprint_author[v])
-        last = reprint_author[v].split(', ')
-        last_str = last[len(last) - 1].split('.')[0]
-        last1 = last_str.split(' ')
-        last_country.append(last1[len(last1) - 1])
-        emails_one = email_array_split(email_array[v])
-        for z in range(len(emails_one)):
-            pi_list.append(last_country[v - count4])
-        # each_city = list_city[v]
+    # ##################################################
+    # country = []  # 将城市信息带入
+    # last_country = []
+    # for v in range(len(email_array)):
+    #     if pd.isna(email_array[v]):
+    #         last_country.append('')
+    #         count4 = count4 + 1
+    #         continue
+    #     country.append(reprint_author[v])
+    #     last = reprint_author[v].split(', ')
+    #     last_str = last[len(last) - 1].split('.')[0]
+    #     last1 = last_str.split(' ')
+    #     last_country.append(last1[len(last1) - 1])
+    # print(len(last_country))
+        # emails_one = email_array_split(email_array[v])
+        # for z in range(len(emails_one)):
+        #     pi_list.append(last_country[v - count4])
+        # # each_city = list_city[v]
         # city.append(each_city)
         # emails_one = email_array_split(email_array[v])
         # for z in range(len(emails_one)):
@@ -394,33 +543,41 @@ def message(email_array, list_paper, list_date, list_publisher, list_city, list_
             re_list.append(reference[m - count5])
 
     #####################################################
-    affiliation1 = []   #将RP一列的机构信息带入
-    for o in range(len(reprint_author)):
-        if pd.isna(email_array[o]):
-            count6 = count6 + 1
-            continue
-        each_affiliation = reprint_author[o]
-        affiliation1.append(each_affiliation)
-        emails_one = email_array_split(email_array[o])
-        for z in range(len(emails_one)):
-            affiliation_list1.append(affiliation1[o - count6])
+    # affiliation1 = []   #将RP一列的机构信息带入
+    # for o in range(len(reprint_author)):
+    #     if pd.isna(email_array[o]):
+    #         count6 = count6 + 1
+    #         continue
+    #     each_affiliation = reprint_author[o]
+    #     affiliation1.append(each_affiliation)
+    #     emails_one = email_array_split(email_array[o])
+    #     for z in range(len(emails_one)):
+    #         affiliation_list1.append(affiliation1[o - count6])
 
     #######################################################
-    affiliation2 = []   #将RP中提取出的机构名称带入
-    for s in range(len(reprint_author)):
-        if pd.isna(email_array[s]):
-            count7 = count7+1
-            continue
-        each_affiliation1= reprint_author[s].split(', ')[2]
-        affiliation2.append(each_affiliation1)
-        emails_one = email_array_split(email_array[s])
-        for f in range(len(emails_one)):
-            affiliation_list2.append(affiliation2[s-count7])
+    # affiliation2 = []   #将RP中提取出的机构名称带入
+    # for s in range(len(reprint_author)):
+    #     if pd.isna(email_array[s]):
+    #         # count7 = count7+1
+    #         affiliation2.append('')
+    #         continue
+    #     if reprint_author[s] == float:
+    #         reprint_author[s] = ''
+    #     each_affiliation1= reprint_author[s].split(', ')[2]
+    #     affiliation2.append(each_affiliation1)
+    # print(len(affiliation2))
+        # emails_one = email_array_split(email_array[s])
+        # for f in range(len(emails_one)):
+        #     affiliation_list2.append(affiliation2[s-count7])
 
     ##########################################################
     full =[]
     all_author = []
     all_rp = []
+    all_affiliation = []
+    all_country = []
+
+
 
     # for r in range(len(email_array)):
     #     if pd.isna(email_array[r]):
@@ -439,19 +596,43 @@ def message(email_array, list_paper, list_date, list_publisher, list_city, list_
         for _ in range(len(emails_one)):
             all_author.append(full_names[i])
             all_rp.append(reprint_author[i])
+            # all_affiliation.append(affiliation2[i])
+            # all_country.append(last_country[i])
 
     # print(all_author)
-    # print(len(all_author))
+    # print(len(affiliation2))
 
-    for u in range(len(all_author)):
-        if full_list[u] == 'NA':
-            author.append(all_author[u])
-            rp.append(all_rp[u])
-        else:
+    # 根据matched_state_list决定输出: 0 for not match any name; 1 for match rp; 2 for match names;
+    assert len(matched_state_list) == len(all_author)
+    for i in range(len(matched_state_list)):
+        if matched_state_list[i] == 0:
+            author.append(all_author[i])
+            rp.append(all_rp[i])
+            short_list[i] = ''
+            full_list[i] = ''
+        elif matched_state_list[i] == 1:
             author.append('')
             rp.append('')
+        elif matched_state_list[i] == 2:
+            author.append('')
+            rp.append('')
+            list_country[i] = ''
+            list_affiliation[i] = ''
+
+    # for u in range(len(all_author)):
+    #     if full_list[u] == '':
+    #         author.append(all_author[u])
+    #         rp.append(all_rp[u])
+    #         # new_affiliation.append(all_affiliation[u])
+    #         # pi_list.append(all_country[u])
+    #     else:
+    #         author.append('')
+    #         rp.append('')
+    #         # new_affiliation.append((''))
+    #         # pi_list.append('')
+
     # print(author)
-    print(len(author))
+    # print(len(author))
         # emails_one = email_array_split(email_array[r])
         # if full_list[r] != 'NA':
         #     for y in range(len(emails_one)):
@@ -481,13 +662,14 @@ def message(email_array, list_paper, list_date, list_publisher, list_city, list_
     return list_all_emails
 
 
-
 ##########################################################################################################
 def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_array):
     global short_list
     global full_list
+    global matched_state_list
     length = len(email_array)
     new_emails = []
+    short_name = []
 
     for i in range(length):
         if pd.isna(email_array[i]):
@@ -500,46 +682,57 @@ def match_mul_paper(short_name_array, full_name_array, rp_name_array, email_arra
         full_names = name_array_split(full_name_array[i])
         names = ['; '.join([short, full]) for short, full in zip(short_names, full_names)]
 
-        if pd.isna(rp_name_array[i]):
+        # if pd.isna(rp_name_array[i]):
             # 若rp无数据，则直接输出匹配结果NA
-            [short_list.append('NA') for _ in range(len(emails))]
-            [full_list.append('NA') for _ in range(len(emails))]
+            # [short_list.append('NA') for _ in range(len(emails))]
+            # [full_list.append('NA') for _ in range(len(emails))]
+            # [short_name.append('') for _ in range(len(emails))]
+
             # matched_short_names, matched_full_names = match_name_email(names, emails)
             # [short_list.append(s.split(',')[0]) for s in matched_short_names]
             # [full_list.append(s) for s in matched_full_names]
 
-        elif len(emails) >= 1:
-            unsplited_rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
-            rp_names = []
-            for name in unsplited_rp_names:
-                name = name.split(';')
-                [rp_names.append(n.strip()) for n in name]
-                
-            # 若rp有数据(>=1)，则先用邮箱匹配rp
-            matched_rp_names = match_rp_email(rp_names, emails)
-            assert len(matched_rp_names) == len(emails)
+        if len(emails) >= 1:
+            if not pd.isna(rp_name_array[i]):
+                # 若rp有数据(>=1)，则先用邮箱匹配rp
+                rp_names = []
+                unsplited_rp_names = re.findall(r'[; ]?(.*?)\s\(reprint author\).*?\.', rp_name_array[i])
+                for name in unsplited_rp_names:
+                    name = name.split(';')
+                    [rp_names.append(n.strip()) for n in name]
+                matched_rp_names = match_rp_email(rp_names, emails)
+            elif pd.isna(rp_name_array[i]):
+                # 若rp无数据(>=1)，则
+                matched_rp_names = ['NA'] * len(emails)
 
+            assert len(matched_rp_names) == len(emails)
             matched_full_names = ['NA'] * len(emails)
 
-            for i in range(len(matched_rp_names)):
-                if matched_rp_names[i] != 'NA':
-                    # 邮箱匹配rp成功，简称匹配全称
-                    matched_full_name = match_full_short_name(short_names, full_names, matched_rp_names[i])
-                    matched_full_names[i] = matched_full_name[0]
+            for j in range(len(matched_rp_names)):
+                if matched_rp_names[j] != 'NA':
+                    # 邮箱匹配rp成功: 1.简称匹配全称; 2.设置matched_state为 1;
+                    matched_full_name = match_full_short_name(short_names, full_names, matched_rp_names[j])
+                    matched_full_names[j] = matched_full_name[0]
+                    matched_state_list.append(1)
 
-                elif matched_rp_names[i] == 'NA':
-                    # 若邮箱匹配rp失败，则直接输出匹配结果NA
-                    matched_rp_names[i] = 'NA'
-                    matched_full_names[i] = 'NA'
-                    # matched_short_name, matched_full_name = match_name_email(names, emails[i])
-                    # matched_rp_names[i] = matched_short_name[0]
-                    # matched_full_names[i] = matched_full_name[0]
+                elif matched_rp_names[j] == 'NA':
+                    # 若邮箱匹配rp失败: 1.邮箱匹配names; 2.设置matched_state为 2;
+                    # matched_rp_names[j] = ''
+                    # matched_full_names[j] = ''
+                    matched_short_name, matched_full_name = match_name_email(names, emails[j])
+                    matched_rp_names[j] = matched_short_name[0]
+                    matched_full_names[j] = matched_full_name[0]
+                    matched_state_list.append(2) if matched_full_names[j] != 'NA' \
+                                                 else matched_state_list.append(0)
 
             [short_list.append(s.split(',')[0]) for s in matched_rp_names]
+            [short_name.append(s) for s in matched_rp_names]
             [full_list.append(s) for s in matched_full_names]
+            
+        assert len(short_list) == len(matched_state_list)
 
-    return new_emails
-
+    # print(len(short_list), '1')
+    return new_emails, short_name
 
 ###################################写入新的EXCEL文件#########################################
 def write_to_excel(matched_file_path):
@@ -556,19 +749,20 @@ def write_to_excel(matched_file_path):
     df = pd.DataFrame()
     df.insert(df.shape[1], 'Full_Name', full_list)
     df.insert(df.shape[1], 'First_Name', short_list)
-    df.insert(df.shape[1], 'Paper_Title', paper_list)
     df.insert(df.shape[1], 'Emails', re_email)
-    df.insert(df.shape[1], 'Country', pi_list)
+    df.insert(df.shape[1], 'Paper_Title', paper_list)
     df.insert(df.shape[1], 'JOURNAL', pb_list)
     df.insert(df.shape[1], 'Publish_Year', pd_list)
-    df.insert(df.shape[1], 'Reference_Count', re_list)
-    df.insert(df.shape[1], 'Affiliation1', affiliation_list1)
-    df.insert(df.shape[1], 'Affiliation2', affiliation_list2)
+    df.insert(df.shape[1], 'Affiliation', list_affiliation)
+    # df.insert(df.shape[1], 'Emails', re_email)
+    df.insert(df.shape[1], 'Country', list_country)
+    # df.insert(df.shape[1], 'JOURNAL', pb_list)
+    # df.insert(df.shape[1], 'Publish_Year', pd_list)
+    # df.insert(df.shape[1], 'Reference_Count', re_list)
+    # df.insert(df.shape[1], 'Affiliation1', affiliation_list1)
+    # df.insert(df.shape[1], 'Affiliation2', affiliation_list2)
     df.insert(df.shape[1], 'Author', author)
     df.insert(df.shape[1], 'RP', rp)
-
-    # df['EAS'] = df_add['EAS']
-    # df['EAF'] = df_add['EAF']
     df.to_excel(matched_file_path)
 
 
@@ -599,11 +793,15 @@ def match():
     paper_reference = data['NR']
 
 
+    all_reprint_short, all_reprint_country, all_reprint_affiliation = af(reprint_authers, author_emails)
+    email_array, short_name = match_mul_paper(short_names, full_names, reprint_authers, author_emails)
+    # print(short_name)
+    # print(len(short_name), '1')
+    match_list(all_reprint_short, all_reprint_country, all_reprint_affiliation, short_name, author_emails)
 
-    email_array = match_mul_paper(short_names, full_names, reprint_authers, author_emails)
     list_all_emails = message(author_emails, paper_title, paper_date, paper_publisher, paper_city, paper_reference, reprint_authers, full_names)
-    last_country = differ_country(reprint_authers, author_emails)
-    color = match_country(last_country,excel_country, excel_state, color_list, author_emails)
+    # differ_country(reprint_authers, author_emails)
+    color = match_country(list_country, excel_country, excel_state, color_list, author_emails)
 
     row_list = email_find_163(email_array,list_all_emails)
 
